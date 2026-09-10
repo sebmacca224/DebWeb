@@ -1,4 +1,8 @@
 .admin-body { min-height: 100vh; background: var(--paper); }
+.admin-body:not(.admin-authenticated) .admin-nav { display: none; }
+.admin-body:not(.admin-authenticated) .admin-layout { grid-template-columns: 1fr; }
+.admin-login { max-width: 520px; }
+.admin-login .admin-form { margin-top: 2rem; }
 .admin-topbar { display: flex; align-items: center; gap: 1.4rem; min-height: 76px; padding: 1rem max(4vw, 1.5rem); border-bottom: 1px solid var(--line); background: var(--paper); }
 .admin-topbar p { margin: 0; color: var(--muted); font-size: .8rem; }
 .admin-topbar p span { margin-left: .4rem; color: var(--wine); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }

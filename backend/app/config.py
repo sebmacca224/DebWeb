@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     brevo_list_id: int | None = None
     brevo_sender_email: str | None = None
     brevo_sender_name: str = "Deborah Fowler"
+    admin_emails: str = ""
+    session_secret: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -36,6 +38,14 @@ class Settings(BaseSettings):
     @property
     def brevo_is_configured(self) -> bool:
         return bool(self.brevo_api_key and self.brevo_list_id)
+
+    @property
+    def permitted_admin_emails(self) -> set[str]:
+        return {email.strip().lower() for email in self.admin_emails.split(",") if email.strip()}
+
+    @property
+    def admin_auth_is_configured(self) -> bool:
+        return bool(self.supabase_is_configured and self.permitted_admin_emails and self.session_secret)
 
 
 @lru_cache

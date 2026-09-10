@@ -1,4 +1,5 @@
 import { adminData } from "./demo-data.js";
+import { apiUrl } from "/js/config.js";
 
 const root = document.querySelector("#admin-main");
 const navigation = document.querySelector(".admin-nav");
@@ -6,11 +7,26 @@ const deleteDialog = document.querySelector("#delete-dialog");
 const newsletterSendDialog = document.querySelector("#newsletter-send-dialog");
 let isDirty = false;
 let pendingDelete = null;
+let isAuthenticated = false;
+let adminEmail = "";
 
 const cleanPath = (path = location.pathname) => (path.replace(/\/+$/, "") || "/admin").replace("/admin/index.html", "/admin");
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
 const route = (path, label, classes = "") => `<a href="${path}" data-admin-route class="${classes}">${label}</a>`;
 const adminStatus = (id) => `<p id="${id}" class="admin-status" role="status" aria-live="polite"></p>`;
+
+async function apiRequest(path, options = {}) {
+  const endpoint = apiUrl(path);
+  if (!endpoint) throw new Error("The website API is not configured.");
+  const response = await fetch(endpoint, { credentials: "include", ...options });
+  const payload = response.status === 204 ? null : await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.detail || "The request could not be completed.");
+  return payload;
+}
+
+function loginView(message = "") {
+  return `<section class="admin-page admin-login"><p class="eyebrow">Private area</p><h1>Sign in</h1><p>Sign in with Deborah’s authorised website account to manage books and newsletters.</p><form class="admin-form" data-form="login" novalidate>${field("Email address", "email", "", { type: "email", required: true })}${field("Password", "password", "", { type: "password", required: true })}<div class="admin-form-actions"><button class="admin-button" type="submit">Sign in</button></div>${adminStatus("login-status")}</form>${message ? `<p class="admin-status" data-type="error">${escapeHtml(message)}</p>` : ""}</section>`;
+}
 
 function bookRow(book) {
   const publication = book.publicationDate || "Not added";
@@ -19,7 +35,7 @@ function bookRow(book) {
 
 function dashboardView() {
   const featured = adminData.books.filter((book) => book.featured).length;
-  return `<section class="admin-page"><p class="eyebrow">Admin · development only</p><h1>Welcome</h1><p class="admin-intro">A simple place to manage Deborah’s books, newsletter drafts and author information. Changes cannot be saved until the backend is connected.</p><div class="admin-stat-row"><div><strong>${adminData.books.length}</strong><span>Demo catalogue books</span></div><div><strong>${adminData.newsletters.length}</strong><span>Demo newsletter drafts</span></div><div><strong>${featured}</strong><span>Featured books</span></div></div><div class="admin-action-grid"><article><p class="eyebrow">Books</p><h2>Manage the catalogue</h2><p>Add books, revise descriptions, replace covers and choose a featured title.</p>${route("/admin/books", "Manage books", "admin-button")}</article><article><p class="eyebrow">Newsletter</p><h2>Write to readers</h2><p>Create a draft, check its preview, and prepare it for the newsletter provider.</p>${route("/admin/newsletter", "Write newsletter", "admin-button")}</article><article><p class="eyebrow">Website</p><h2>Author information</h2><p>Update Deborah’s name, biography and portrait when the backend is ready.</p>${route("/admin/website", "Edit website", "admin-button")}</article></div></section>`;
+  return `<section class="admin-page"><p class="eyebrow">Private admin</p><h1>Welcome</h1><p class="admin-intro">Signed in as ${escapeHtml(adminEmail)}. This area is visible only after server-side account verification.</p><div class="admin-stat-row"><div><strong>${adminData.books.length}</strong><span>Demo catalogue books</span></div><div><strong>${adminData.newsletters.length}</strong><span>Demo newsletter drafts</span></div><div><strong>${featured}</strong><span>Featured books</span></div></div><div class="admin-action-grid"><article><p class="eyebrow">Books</p><h2>Manage the catalogue</h2><p>Add books, revise descriptions, replace covers and choose a featured title.</p>${route("/admin/books", "Manage books", "admin-button")}</article><article><p class="eyebrow">Newsletter</p><h2>Write to readers</h2><p>Create a draft, check its preview, and prepare it for the newsletter provider.</p>${route("/admin/newsletter", "Write newsletter", "admin-button")}</article><article><p class="eyebrow">Website</p><h2>Author information</h2><p>Update Deborah’s name, biography and portrait when the backend is ready.</p>${route("/admin/website", "Edit website", "admin-button")}</article></div></section>`;
 }
 
 function booksView() { return `<section class="admin-page"><div class="admin-page-heading"><div><p class="eyebrow">Catalogue</p><h1>Books</h1><p>${adminData.books.length} demo entries from the shared public catalogue.</p></div>${route("/admin/books/new", "+ Add book", "admin-button")}</div><div class="admin-book-list"><div class="admin-book-list-head"><span>Cover</span><span>Title</span><span>Published</span><span>Featured</span><span>Actions</span></div>${adminData.books.map(bookRow).join("")}</div></section>`; }
@@ -42,6 +58,12 @@ function websiteView() { const author = adminData.author; return `<section class
 function notFoundView() { return `<section class="admin-page"><p class="eyebrow">Admin</p><h1>Page not found</h1>${route("/admin", "Return to dashboard", "admin-button")}</section>`; }
 
 function render() {
+  if (!isAuthenticated) {
+    root.innerHTML = loginView();
+    bindLoginForm();
+    root.focus();
+    return;
+  }
   const path = cleanPath();
   const bookEdit = path.match(/^\/admin\/books\/([^/]+)$/);
   const draftEdit = path.match(/^\/admin\/newsletter\/([^/]+)$/);
@@ -51,6 +73,40 @@ function render() {
   root.innerHTML = bookEdit ? bookFormView(book) : draftEdit ? newsletterEditorView(draft) : (pages[path] ? pages[path]() : notFoundView());
   navigation.querySelectorAll("a").forEach((link) => link.classList.toggle("active", cleanPath(link.pathname) === path));
   bindPageInteractions(); root.focus();
+}
+
+function setAdminChrome() {
+  document.body.classList.toggle("admin-authenticated", isAuthenticated);
+  const note = document.querySelector("[data-admin-note]");
+  const logout = document.querySelector('[data-action="logout"]');
+  note.textContent = isAuthenticated ? `Signed in as ${adminEmail}` : "Private admin";
+  logout.hidden = !isAuthenticated;
+}
+
+function bindLoginForm() {
+  const form = root.querySelector('[data-form="login"]');
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = form.querySelector("button[type=submit]");
+    button.disabled = true;
+    button.textContent = "Signing in…";
+    try {
+      await apiRequest("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email.value.trim(), password: form.password.value }),
+      });
+      const session = await apiRequest("/api/admin/session");
+      isAuthenticated = true;
+      adminEmail = session.email;
+      setAdminChrome();
+      render();
+    } catch (error) {
+      setStatus("login-status", error.message, "error");
+      button.disabled = false;
+      button.textContent = "Sign in";
+    }
+  });
 }
 
 function routeTo(path) { if (isDirty && !window.confirm("You have unsaved changes. Leave this page without saving?")) return; isDirty = false; history.pushState({}, "", path); render(); }
@@ -67,6 +123,12 @@ function bindPageInteractions() {
 document.addEventListener("click", (event) => {
   const link = event.target.closest("a[data-admin-route]"); if (link) { event.preventDefault(); routeTo(link.pathname); return; }
   const action = event.target.dataset.action;
+  if (action === "logout") {
+    apiRequest("/api/auth/logout", { method: "POST" }).catch(() => undefined).finally(() => {
+      isAuthenticated = false; adminEmail = ""; setAdminChrome(); render();
+    });
+    return;
+  }
   if (action === "edit-book") routeTo(`/admin/books/${event.target.dataset.bookId}`);
   if (action === "delete-book") { pendingDelete = adminData.books.find((book) => book.id === event.target.dataset.bookId); document.querySelector("#delete-title").textContent = `Delete “${pendingDelete.title}”?`; deleteDialog.showModal(); }
   if (action === "preview-newsletter") previewNewsletter(event.target.closest("form"));
@@ -77,4 +139,17 @@ deleteDialog.addEventListener("close", () => { if (deleteDialog.returnValue === 
 newsletterSendDialog.addEventListener("close", () => { if (newsletterSendDialog.returnValue === "confirm") setStatus("newsletter-status", "Newsletter delivery is not configured yet. Connect the newsletter provider before sending.", "notice"); });
 window.addEventListener("popstate", render);
 window.addEventListener("beforeunload", (event) => { if (isDirty) { event.preventDefault(); event.returnValue = ""; } });
-render();
+
+async function start() {
+  try {
+    const session = await apiRequest("/api/admin/session");
+    isAuthenticated = true;
+    adminEmail = session.email;
+  } catch (_) {
+    isAuthenticated = false;
+  }
+  setAdminChrome();
+  render();
+}
+
+start();
