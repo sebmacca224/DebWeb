@@ -54,5 +54,35 @@ alter table public.newsletter_drafts enable row level security;
 revoke all on table public.books, public.author_profile, public.newsletter_drafts from anon, authenticated;
 grant select, insert, update, delete on table public.books, public.author_profile, public.newsletter_drafts to service_role;
 
+-- Initial editable catalogue. These inserts are safe to rerun and never replace
+-- books that have already been edited in the admin.
+insert into public.books (
+  slug, title, description, cover_url, cover_alt, genre, featured, extract
+) values (
+  'secrets-in-st-ives',
+  'Secrets in St Ives',
+  'A description of Secrets in St Ives will be added here.',
+  '/assets/secrets-in-st-ives.jpg',
+  'Cover of Secrets in St Ives by Deborah Fowler',
+  'Mystery novel',
+  true,
+  'A short approved sample from this book can appear here—only a few paragraphs, enough to draw a reader in without giving away the story.'
+)
+on conflict (slug) do nothing;
+
+insert into public.books (
+  slug, title, description, cover_url, cover_alt, genre, featured
+)
+select
+  'book-' || number,
+  'Book ' || number,
+  'A description of this book will be added here.',
+  '/assets/book-placeholder.svg',
+  'Placeholder cover for Book ' || number,
+  'Mystery novel',
+  false
+from generate_series(2, 15) as number
+on conflict (slug) do nothing;
+
 -- Do not add a browser upload policy for this bucket. Authenticated FastAPI
 -- admin endpoints perform uploads with the server-only service-role key.
