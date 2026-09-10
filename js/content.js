@@ -5,8 +5,8 @@ export const site = {
     photoUrl: "/assets/deborah-fowler.jpg",
     photoAlt: "Deborah Fowler smiling by the sea",
     biography: [
-      "Here is room for Deborah’s own introduction: the books she writes, the places that influence her, and the route that brought her to storytelling.",
-      "There is no need for a long curriculum vitae. The goal is to help readers feel they have met the person behind the books.",
+      "placeholder area for text",
+      "placeholder area for text",
     ],
   },
   api: { newsletterSubscribe: "/api/newsletter/subscribe", contact: "/api/contact" },
