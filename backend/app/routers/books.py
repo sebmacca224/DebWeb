@@ -16,7 +16,9 @@ async def catalogue(settings: Settings) -> list[dict]:
         data = await service.list_books()
     except httpx.HTTPError:
         raise HTTPException(status_code=503, detail="The catalogue is temporarily unavailable")
-    return data if data is not None else DEMO_BOOKS
+    # An empty Supabase catalogue is normal during first-time setup. Keep the
+    # public demonstration catalogue visible until real book records are added.
+    return data or DEMO_BOOKS
 
 
 @router.get("", response_model=list[Book])
@@ -31,9 +33,11 @@ async def get_book(slug: str, settings: Settings = Depends(get_settings)) -> dic
         if settings.supabase_is_configured:
             book = await service.get_book(slug)
         else:
-            book = next((item for item in DEMO_BOOKS if item["slug"] == slug), None)
+            book = None
     except httpx.HTTPError:
         raise HTTPException(status_code=503, detail="The catalogue is temporarily unavailable")
+    if not book:
+        book = next((item for item in DEMO_BOOKS if item["slug"] == slug), None)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     return book

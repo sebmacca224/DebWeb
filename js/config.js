@@ -7,7 +7,7 @@
  * This file must never contain passwords, Supabase keys, or Brevo API keys.
  */
 export const publicConfig = {
-  apiBaseUrl: null,
+  apiBaseUrl: "https://debweb-production.up.railway.app",
 };
 
 export function apiUrl(path) {
