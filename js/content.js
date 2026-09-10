@@ -5,8 +5,7 @@ export const site = {
     photoUrl: "/assets/deborah-fowler.jpg",
     photoAlt: "Deborah Fowler smiling by the sea",
     biography: [
-      "placeholder area for text",
-      "placeholder area for text",
+      "brief description",
     ],
   },
   api: { newsletterSubscribe: "/api/newsletter/subscribe", contact: "/api/contact" },
