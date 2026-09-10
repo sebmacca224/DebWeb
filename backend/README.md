@@ -89,19 +89,25 @@ instead of the seed data.
 
 ## Brevo setup
 
-1. Create a Brevo account and a newsletter list.
-2. Set up and verify Deborah’s sender address in Brevo.
-3. Configure consent/confirmation (normally double opt-in) and unsubscribe text
-   in Brevo.
+1. Create a Brevo contact list and copy its numeric list ID.
+2. Set up and verify Deborah’s sender address. Authenticate its domain before
+   production sending.
+3. Under **Transactional → Templates**, create and activate a double-opt-in
+   confirmation email. Its confirmation button must link to
+   `{{ params.DOIurl }}`. Copy the numeric template ID.
 4. Add these only to `backend/.env` or Railway variables:
 
    ```dotenv
    BREVO_API_KEY=server-only-secret
    BREVO_LIST_ID=123
+   BREVO_DOI_TEMPLATE_ID=456
+   BREVO_DOI_REDIRECT_URL=https://debweb.pages.dev/newsletter?confirmed=1
    BREVO_SENDER_EMAIL=newsletter@deborahfowler.co.uk
    ```
 
-Brevo sends the email and handles subscribers/unsubscribes. Newsletter editions
+The signup endpoint uses Brevo's double-opt-in API, so a reader joins the list
+only after following the confirmation email. Campaigns include a visible Brevo
+unsubscribe link. Brevo sends the email and handles subscribers/unsubscribes. Newsletter editions
 are delivered by email only. If drafts need to be kept outside Brevo, the private
 `newsletter_drafts` table can support the authenticated admin workflow; it must
 never be used to create a public archive.

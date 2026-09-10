@@ -28,6 +28,12 @@
 .admin-stat-row div:last-child { border: 0; }
 .admin-stat-row strong { color: var(--wine); font: 600 2.6rem/1 var(--serif); }
 .admin-stat-row span { color: var(--muted); font-size: .76rem; }
+.integration-summary { max-width: 720px; margin: 0 0 2.6rem; padding: 1.3rem; border: 1px solid var(--line); background: #fbf8f3; }
+.integration-summary h2 { margin: 0 0 .8rem; }
+.integration-summary p { display: flex; justify-content: space-between; gap: 1rem; margin: .4rem 0; }
+.integration-summary small { display: block; margin-top: .9rem; color: var(--muted); }
+.integration-state { font-weight: 700; color: #8a2437; }
+.integration-state[data-ready="true"] { color: #236b45; }
 .admin-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; }
 .admin-action-grid article { display: flex; flex-direction: column; align-items: start; min-height: 255px; padding: 1.7rem; border: 1px solid var(--line); background: #fbf8f3; }
 .admin-action-grid h2 { margin: .45rem 0 .85rem; }

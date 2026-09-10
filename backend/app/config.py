@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     supabase_storage_bucket: str = "author-assets"
     brevo_api_key: str | None = None
     brevo_list_id: int | None = None
+    brevo_doi_template_id: int | None = None
+    brevo_doi_redirect_url: HttpUrl | None = None
     brevo_sender_email: str | None = None
     brevo_sender_name: str = "Deborah Fowler"
     admin_emails: str = ""
@@ -21,10 +23,15 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    @field_validator("brevo_list_id", mode="before")
+    @field_validator("brevo_list_id", "brevo_doi_template_id", mode="before")
     @classmethod
-    def blank_brevo_list_id_is_unconfigured(cls, value: object) -> object:
+    def blank_brevo_integer_is_unconfigured(cls, value: object) -> object:
         """Allow a temporarily blank Railway variable without preventing startup."""
+        return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator("brevo_doi_redirect_url", mode="before")
+    @classmethod
+    def blank_brevo_url_is_unconfigured(cls, value: object) -> object:
         return None if isinstance(value, str) and not value.strip() else value
 
     @property
@@ -38,6 +45,18 @@ class Settings(BaseSettings):
     @property
     def brevo_is_configured(self) -> bool:
         return bool(self.brevo_api_key and self.brevo_list_id)
+
+    @property
+    def brevo_subscription_is_configured(self) -> bool:
+        return bool(
+            self.brevo_is_configured
+            and self.brevo_doi_template_id
+            and self.brevo_doi_redirect_url
+        )
+
+    @property
+    def brevo_sending_is_configured(self) -> bool:
+        return bool(self.brevo_is_configured and self.brevo_sender_email)
 
     @property
     def permitted_admin_emails(self) -> set[str]:

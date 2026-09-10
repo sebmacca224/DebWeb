@@ -37,6 +37,16 @@ async def admin_session(email: str = Depends(require_configured_admin)) -> dict[
     return {"authenticated": True, "email": email}
 
 
+@router.get("/integrations")
+async def integration_status(settings: Settings = Depends(get_settings)) -> dict[str, bool]:
+    """Reports configuration presence only; it never exposes credentials."""
+    return {
+        "database": settings.supabase_is_configured,
+        "newsletterSubscriptions": settings.brevo_subscription_is_configured,
+        "newsletterSending": settings.brevo_sending_is_configured,
+    }
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or f"book-{uuid4().hex[:8]}"

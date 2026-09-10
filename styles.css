@@ -99,6 +99,7 @@ button:disabled { cursor: wait; opacity: .72; }
 .newsletter-form button { padding: .9rem 1.2rem; border: 1px solid var(--ink); background: var(--ink); color: white; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .newsletter-panel .newsletter-form button { border-color: var(--paper); background: var(--paper); color: var(--wine); }
 .form-message { min-height: 1.5rem; margin: .65rem 0 0; text-align: left; font-size: .84rem; }
+.form-confirmation { max-width: 700px; padding: .85rem 1rem; border: 1px solid #8aa995; background: #edf5ef; color: #235c3d; font-weight: 700; }
 .newsletter-panel .form-message { color: #fff; }
 form[data-state="error"] .form-message { color: #b52235; }
 .newsletter-panel[data-state="error"] .form-message { color: #ffe5e9; }

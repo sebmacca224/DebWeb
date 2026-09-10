@@ -25,14 +25,16 @@ async function apiRequest(path, options = {}) {
 }
 
 async function loadAdminData() {
-  const [books, newsletters, author] = await Promise.all([
+  const [books, newsletters, author, integrations] = await Promise.all([
     apiRequest("/api/admin/books"),
     apiRequest("/api/admin/newsletters"),
     apiRequest("/api/admin/author"),
+    apiRequest("/api/admin/integrations"),
   ]);
   adminData.books = books;
   adminData.newsletters = newsletters;
   if (author) adminData.author = author;
+  adminData.integrations = integrations;
 }
 
 function loginView(message = "") {
@@ -46,7 +48,9 @@ function bookRow(book) {
 
 function dashboardView() {
   const featured = adminData.books.filter((book) => book.featured).length;
-  return `<section class="admin-page"><p class="eyebrow">Private admin</p><h1>Welcome</h1><p class="admin-intro">Signed in as ${escapeHtml(adminEmail)}. Changes made here are stored securely and update the public website.</p><div class="admin-stat-row"><div><strong>${adminData.books.length}</strong><span>Catalogue books</span></div><div><strong>${adminData.newsletters.length}</strong><span>Newsletter drafts</span></div><div><strong>${featured}</strong><span>Featured books</span></div></div><div class="admin-action-grid"><article><p class="eyebrow">Books</p><h2>Manage the catalogue</h2><p>Add books, revise descriptions, replace covers and choose a featured title.</p>${route("/admin/books", "Manage books", "admin-button")}</article><article><p class="eyebrow">Newsletter</p><h2>Write to readers</h2><p>Create a draft, check its preview, and send it through Brevo.</p>${route("/admin/newsletter", "Write newsletter", "admin-button")}</article><article><p class="eyebrow">Website</p><h2>Author information</h2><p>Update Deborah’s name, biography and portrait.</p>${route("/admin/website", "Edit website", "admin-button")}</article></div></section>`;
+  const integrations = adminData.integrations;
+  const state = (ready) => `<span class="integration-state" data-ready="${ready}">${ready ? "Configured" : "Needs setup"}</span>`;
+  return `<section class="admin-page"><p class="eyebrow">Private admin</p><h1>Welcome</h1><p class="admin-intro">Signed in as ${escapeHtml(adminEmail)}. Changes made here are stored securely and update the public website.</p><div class="admin-stat-row"><div><strong>${adminData.books.length}</strong><span>Catalogue books</span></div><div><strong>${adminData.newsletters.length}</strong><span>Newsletter drafts</span></div><div><strong>${featured}</strong><span>Featured books</span></div></div><section class="integration-summary" aria-labelledby="integration-heading"><h2 id="integration-heading">Service setup</h2><p>Database ${state(integrations.database)}</p><p>Newsletter sign-up ${state(integrations.newsletterSubscriptions)}</p><p>Newsletter sending ${state(integrations.newsletterSending)}</p><small>These checks confirm that Railway has the required settings; use a test sign-up and test email before sending publicly.</small></section><div class="admin-action-grid"><article><p class="eyebrow">Books</p><h2>Manage the catalogue</h2><p>Add books, revise descriptions, replace covers and choose a featured title.</p>${route("/admin/books", "Manage books", "admin-button")}</article><article><p class="eyebrow">Newsletter</p><h2>Write to readers</h2><p>Create a draft, check its preview, and send it through Brevo.</p>${route("/admin/newsletter", "Write newsletter", "admin-button")}</article><article><p class="eyebrow">Website</p><h2>Author information</h2><p>Update Deborah’s name, biography and portrait.</p>${route("/admin/website", "Edit website", "admin-button")}</article></div></section>`;
 }
 
 function booksView() { return `<section class="admin-page"><div class="admin-page-heading"><div><p class="eyebrow">Catalogue</p><h1>Books</h1><p>${adminData.books.length} saved ${adminData.books.length === 1 ? "book" : "books"}.</p></div>${route("/admin/books/new", "+ Add book", "admin-button")}</div><div class="admin-book-list"><div class="admin-book-list-head"><span>Cover</span><span>Title</span><span>Published</span><span>Featured</span><span>Actions</span></div>${adminData.books.length ? adminData.books.map(bookRow).join("") : "<p>No books have been saved yet. Choose Add book to begin.</p>"}</div>${adminStatus("books-status")}</section>`; }

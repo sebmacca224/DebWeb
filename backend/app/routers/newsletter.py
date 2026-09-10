@@ -13,9 +13,9 @@ async def subscribe(
     subscription: NewsletterSubscription,
     settings: Settings = Depends(get_settings),
 ) -> dict[str, str | bool]:
-    """Adds a contact to Brevo. Confirmation/double opt-in is set in Brevo."""
-    if not settings.brevo_is_configured:
-        raise HTTPException(status_code=503, detail="Newsletter service is not configured yet")
+    """Starts Brevo's double-opt-in flow; the address is listed after confirmation."""
+    if not settings.brevo_subscription_is_configured:
+        raise HTTPException(status_code=503, detail="Newsletter confirmation is not configured yet")
     try:
         await BrevoService(settings).subscribe(subscription)
     except httpx.HTTPStatusError:
@@ -23,4 +23,3 @@ async def subscribe(
     except httpx.HTTPError:
         raise HTTPException(status_code=502, detail="The newsletter service is temporarily unavailable")
     return {"success": True, "message": "Subscription received"}
-

@@ -14,27 +14,28 @@ class BrevoService:
         self.settings = settings
 
     async def subscribe(self, subscription: NewsletterSubscription) -> None:
-        if not self.settings.brevo_is_configured:
-            raise RuntimeError("Newsletter service is not configured")
+        if not self.settings.brevo_subscription_is_configured:
+            raise RuntimeError("Newsletter confirmation is not configured")
         attributes = {}
         if subscription.name:
             attributes["FIRSTNAME"] = subscription.name
         payload = {
             "email": str(subscription.email),
             "attributes": attributes,
-            "listIds": [self.settings.brevo_list_id],
-            "updateEnabled": True,
+            "includeListIds": [self.settings.brevo_list_id],
+            "redirectionUrl": str(self.settings.brevo_doi_redirect_url),
+            "templateId": self.settings.brevo_doi_template_id,
         }
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(
-                "https://api.brevo.com/v3/contacts",
+                "https://api.brevo.com/v3/contacts/doubleOptinConfirmation",
                 headers={"api-key": self.settings.brevo_api_key, "Content-Type": "application/json"},
                 json=payload,
             )
             response.raise_for_status()
 
     async def create_campaign(self, subject: str, preview_text: str | None, content: str) -> int:
-        if not self.settings.brevo_is_configured or not self.settings.brevo_sender_email:
+        if not self.settings.brevo_sending_is_configured:
             raise RuntimeError("Newsletter sending is not configured")
         paragraphs = "".join(
             f"<p style=\"margin:0 0 1em\">{html.escape(part).replace(chr(10), '<br>')}</p>"
@@ -49,7 +50,11 @@ class BrevoService:
             "recipients": {"listIds": [self.settings.brevo_list_id]},
             "htmlContent": (
                 "<div style=\"max-width:640px;margin:auto;font:17px/1.65 Georgia,serif;color:#262526\">"
-                f"<h1 style=\"font-size:30px\">{html.escape(subject)}</h1>{paragraphs}</div>"
+                f"<h1 style=\"font-size:30px\">{html.escape(subject)}</h1>{paragraphs}"
+                "<hr style=\"margin:36px 0 18px;border:0;border-top:1px solid #d4cdc4\">"
+                "<p style=\"font:14px/1.5 Arial,sans-serif;color:#625d58\">"
+                "You are receiving this because you subscribed to Deborah Fowler’s newsletter. "
+                "<a href=\"{{ unsubscribe }}\">Unsubscribe</a>.</p></div>"
             ),
         }
         async with httpx.AsyncClient(timeout=15) as client:
