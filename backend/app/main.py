@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
-from app.routers import admin, auth, books, contact, newsletter
+from app.routers import admin, auth, author, books, contact, newsletter
 
 settings = get_settings()
 app = FastAPI(title="Deborah Fowler website API", version="0.1.0")
@@ -14,7 +14,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Accept"],
 )
 # A missing secret leaves admin authentication unavailable; it never grants access.
@@ -30,6 +30,7 @@ app.include_router(newsletter.router)
 app.include_router(contact.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(author.router)
 
 
 @app.get("/health")

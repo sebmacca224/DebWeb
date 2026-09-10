@@ -46,5 +46,13 @@ insert into storage.buckets (id, name, public)
 values ('author-assets', 'author-assets', true)
 on conflict (id) do nothing;
 
--- Do not add a browser upload policy for this bucket. The eventual authenticated
--- FastAPI admin endpoint will perform uploads with the service-role key.
+-- Browser roles cannot read or change site-management tables directly. All
+-- access is through authenticated FastAPI routes using the server-side key.
+alter table public.books enable row level security;
+alter table public.author_profile enable row level security;
+alter table public.newsletter_drafts enable row level security;
+revoke all on table public.books, public.author_profile, public.newsletter_drafts from anon, authenticated;
+grant select, insert, update, delete on table public.books, public.author_profile, public.newsletter_drafts to service_role;
+
+-- Do not add a browser upload policy for this bucket. Authenticated FastAPI
+-- admin endpoints perform uploads with the server-only service-role key.

@@ -1,4 +1,4 @@
-import { books as seedBooks } from "./content.js";
+import { books as seedBooks, site } from "./content.js";
 import { apiUrl } from "./config.js";
 import { aboutView, bookDetailView, booksView, contactView, homeView, newsletterView, notFoundView } from "./views.js";
 
@@ -26,6 +26,23 @@ async function loadBooks() {
   } catch {
     // The static seed keeps the preview usable if the backend is unavailable.
     return seedBooks;
+  }
+}
+async function loadAuthor() {
+  const endpoint = apiUrl("/api/author");
+  if (!endpoint) return;
+  try {
+    const response = await fetch(endpoint, { headers: { Accept: "application/json" } });
+    if (!response.ok) return;
+    const author = await response.json();
+    site.author = {
+      name: author.name,
+      photoUrl: author.photoUrl || site.author.photoUrl,
+      photoAlt: author.photoAlt || `Portrait of ${author.name}`,
+      biography: author.biography.split(/\n\s*\n/).filter(Boolean),
+    };
+  } catch {
+    // Keep the approved static content if the author profile cannot be loaded.
   }
 }
 function setMetadata(path, book) { const [title, description] = book ? [`${book.title} — Deborah Fowler`, book.description] : (pageMetadata[path] || ["Page not found — Deborah Fowler", "Deborah Fowler mystery novels."]); document.title = title; document.querySelector('meta[name="description"]').setAttribute("content", description); document.querySelector('meta[property="og:title"]').setAttribute("content", title); document.querySelector('meta[property="og:description"]').setAttribute("content", description); }
@@ -57,5 +74,5 @@ menuButton.addEventListener("click", () => { const isOpen = nav.classList.toggle
 window.addEventListener("popstate", render);
 document.querySelector("#year").textContent = new Date().getFullYear();
 document.querySelector(".footer-form").addEventListener("submit", submitForm);
-books = await loadBooks();
+await Promise.all([loadBooks().then((loadedBooks) => { books = loadedBooks; }), loadAuthor()]);
 render();

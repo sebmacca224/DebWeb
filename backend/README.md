@@ -2,9 +2,9 @@
 
 This is the deliberately small FastAPI service behind the static author website.
 It is built for a public Cloudflare Pages frontend, Supabase for catalogue data and
-public image URLs, and Brevo for email subscriptions. It contains no admin write
-endpoints yet: the development admin is not secure and must not be deployed as a
-live management tool until server-side authentication and authorization exist.
+public image URLs, and Brevo for subscriptions and campaigns. Admin writes are
+protected by Supabase Auth, an explicit administrator email list, signed HTTP-only
+sessions, approved-origin checks, and FastAPI authorization.
 
 ## What works now
 
@@ -17,11 +17,13 @@ live management tool until server-side authentication and authorization exist.
 - `POST /api/contact` validates the submitted fields but deliberately returns an
   honest service-not-configured response until a secure contact destination is
   selected.
+- `POST /api/auth/login` verifies a Supabase Auth account; `/api/admin/*` requires
+  the resulting signed session and a permitted email.
+- Authenticated admin routes manage books, images, author information and private
+  newsletter drafts, tests and confirmed Brevo sends.
 
 Newsletters are email-only: they are not published, archived, or displayed on the
-public website. The backend does not yet send newsletters, upload images, save
-drafts, or save admin changes. Those functions are intentionally postponed until
-`/api/admin/*` is protected with server-side authentication.
+public website.
 
 ## Local setup
 
@@ -77,6 +79,14 @@ The service role key must never be added to the frontend, Cloudflare Pages files
 or GitHub. Once these values exist, the public book endpoints read from Supabase
 instead of the seed data.
 
+## Admin access
+
+1. In Supabase **Authentication → Users**, create Deborah's email/password user.
+2. Add `ADMIN_EMAILS` and a long random `SESSION_SECRET` only in Railway.
+3. Keep `CORS_ORIGINS` restricted to the actual Pages and custom-domain origins.
+4. Visit `/admin`; FastAPI authorizes every data-changing request independently
+   of the frontend page.
+
 ## Brevo setup
 
 1. Create a Brevo account and a newsletter list.
@@ -122,18 +132,18 @@ never be used to create a public archive.
 8. Only after the Pages preview is approved, add `deborahfowler.co.uk` to
    Cloudflare, change nameservers at its existing registrar, and attach the domain
    to the Pages project. Keep the domain; no new domain purchase is needed.
-9. Add server-side authentication and authorization before publishing real admin
-   saving, deleting, image uploads or newsletter sending.
+9. Create Deborah's Supabase Auth user and configure `ADMIN_EMAILS` and
+   `SESSION_SECRET` before using the admin.
 
-## Future protected endpoints
+## Protected endpoints
 
-After authentication is in place, use protected routes such as:
+Authenticated admin routes include:
 
 - `POST`, `PUT`, `DELETE /api/admin/books`
-- `POST /api/admin/uploads`
-- `GET`, `POST`, `PUT`, `DELETE /api/admin/newsletters`
+- `POST /api/admin/images`
+- `GET`, `POST`, `PUT /api/admin/newsletters`
 - `POST /api/admin/newsletters/{id}/test`
 - `POST /api/admin/newsletters/{id}/send`
 
-The public `/api/books` endpoints stay read-only. FastAPI—not hidden frontend
-pages—must enforce access control.
+The public `/api/books` and `/api/author` endpoints stay read-only. FastAPI—not
+hidden frontend pages—enforces access control.

@@ -21,5 +21,5 @@ Railway's Variables screen. Never commit a real `.env` file.
 - Supabase: books and images
 - Brevo: newsletter subscribers and email campaigns
 
-The `/admin` interface is development-only until FastAPI authentication is added.
-
+The `/admin` interface uses Supabase Auth and FastAPI-signed sessions. Configure
+`ADMIN_EMAILS` and `SESSION_SECRET` in Railway before attempting to sign in.
