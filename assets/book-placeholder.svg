@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-label="Book cover placeholder">
+  <rect width="600" height="900" fill="#fcfbf8"/>
+  <rect x="10" y="10" width="580" height="880" fill="none" stroke="#201f20" stroke-width="12"/>
+  <text x="60" y="760" fill="#201f20" font-family="Georgia,serif" font-size="44">DEBORAH FOWLER</text>
+</svg>
